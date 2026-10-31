@@ -1,0 +1,70 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+import { BASE_FONT_SIZE_PX, portfolioConfig, px, resolveImage, resolveLanguage, resolveTheme } from "@/lib/portfolio-config";
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const { siteTitle, siteDescription } = portfolioConfig.meta;
+
+// A file in public/ resolves to a root-relative path ("/og.png"), which Next
+// expands against `metadataBase` into the absolute URL the OG/Twitter tags
+// need. Left empty, the tags are omitted rather than pointing at nothing.
+const ogImage = resolveImage(portfolioConfig.meta.ogImage);
+
+// Resolved (not read raw) so a bad value in the config file can't reach
+// next-themes or the <html lang> attribute.
+const defaultTheme = resolveTheme(portfolioConfig);
+const htmlLang = resolveLanguage(portfolioConfig);
+
+// Next.js doesn't prepend basePath to the auto-generated icon.tsx <link> href
+// (https://github.com/vercel/next.js/issues/61487), so it's set explicitly here.
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+export const metadata: Metadata = {
+  title: siteTitle,
+  description: siteDescription,
+  metadataBase: new URL(
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"
+  ),
+  icons: {
+    icon: `${basePath}/icon`,
+  },
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    ...(ogImage ? { images: [ogImage] } : {}),
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang={htmlLang} className={`${inter.variable} antialiased`} style={{ fontSize: px(BASE_FONT_SIZE_PX) }} suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        {/* `disableTransitionOnChange` suppresses CSS transitions for the frame
+            in which the theme class flips. Without it, the `transition-colors`
+            the cards carry for their hover state also animates the theme swap,
+            so they fade over 150ms while untransitioned text switches at once. */}
+        <ThemeProvider attribute="class" defaultTheme={defaultTheme} disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
